@@ -1,3 +1,28 @@
+# cosmic-panel (fork)
+
+> **This is a fork of [pop-os/cosmic-panel](https://github.com/pop-os/cosmic-panel)**, the panel of the
+> COSMIC desktop by [System76](https://system76.com). All credit for the panel itself goes to
+> System76 and the upstream contributors. The license is unchanged: **GPL-3.0-only** (see `LICENSE.md`).
+
+## Changes in this fork
+
+Maintained by [eualexandrerrr](https://github.com/eualexandrerrr) for the
+[dotfiles](https://github.com/eualexandrerrr/dotfiles) setup. Everything below is a modification of the
+original work, as required by section 5 of the GPL.
+
+- **`background_per_group`** (new key in `com.system76.CosmicPanel.Panel/v1`, default `false`). When set
+  together with `expand_to_edges = true`, the panel draws no full-width background: each non-empty
+  group (left, center, right) gets its own rounded pill, padded by `padding` and rounded by
+  `border_radius`. Files touched: `cosmic-panel-config/src/panel_config.rs`,
+  `cosmic-panel-config/src/container_config.rs`, `cosmic-panel-bin/src/space/{panel_space,layout,render}.rs`.
+
+Build: `cargo build --release -p cosmic-panel-bin`; the binary is `target/release/cosmic-panel`.
+The dotfiles install it to `~/.local/bin`, ahead of the distro package.
+
+---
+
+Original README follows.
+
 # Cosmic Panel (WIP)
 
 ### Building and Installing .deb
