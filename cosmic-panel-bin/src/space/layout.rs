@@ -911,7 +911,13 @@ impl PanelSpace {
                     continue;
                 }
                 // map_windows leaves the cursor one spacing past the last applet.
-                let length = (group_end - spacing_u32 as f64 - group_start).max(0.) + pad * 2.;
+                let content = group_end - spacing_u32 as f64 - group_start;
+                // An applet that draws nothing (a media applet with no player) must not leave
+                // an empty pill behind.
+                if content < 2. {
+                    continue;
+                }
+                let length = content.max(0.) + pad * 2.;
                 let (gloc, gw, gh) = if self.config.is_horizontal() {
                     ([(group_start - pad) as f32, loc[1]], length.round() as i32, h)
                 } else {
