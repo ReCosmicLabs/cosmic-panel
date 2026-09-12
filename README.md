@@ -13,7 +13,8 @@ original work, as required by section 5 of the GPL.
 - **`background_per_group`** (new key in `com.system76.CosmicPanel.Panel/v1`, default `false`). When set
   together with `expand_to_edges = true`, the panel draws no full-width background: each non-empty
   group (left, center, right) gets its own rounded pill, padded by `padding` and rounded by
-  `border_radius`. Files touched: `cosmic-panel-config/src/panel_config.rs`,
+  `border_radius`. Blur and the input region follow the pills too, so the rest of the layer is
+  fully transparent and clicks between groups reach the desktop. Files touched: `cosmic-panel-config/src/panel_config.rs`,
   `cosmic-panel-config/src/container_config.rs`, `cosmic-panel-bin/src/space/{panel_space,layout,render}.rs`.
 
 Build: `cargo build --release -p cosmic-panel-bin`; the binary is `target/release/cosmic-panel`.
