@@ -474,11 +474,16 @@ impl PanelSpace {
 
         let mut center_pos = layer_major as f64 / 2. - center_sum / 2.;
 
-        let left_pos = container_lengthwise_pos as f64 + padding_u32 as f64;
-        let mut right_pos = new_list_dim_length as f64
-            - container_lengthwise_pos as f64
-            - right_sum
-            - padding_u32 as f64;
+        // With one pill per group each pill gets `spacing` of breathing room at both ends,
+        // on top of `padding`, so the first and last applet never sit on the pill's edge.
+        let end_pad = if self.config.background_per_group() && !is_dock {
+            (padding_u32 + spacing_u32) as f64
+        } else {
+            padding_u32 as f64
+        };
+        let left_pos = container_lengthwise_pos as f64 + end_pad;
+        let mut right_pos =
+            new_list_dim_length as f64 - container_lengthwise_pos as f64 - right_sum - end_pad;
 
         let one_third = (layer_major as f64 - (spacing_u32 * num_lists.saturating_sub(1)) as f64)
             / (3.min(num_lists) as f64);
@@ -892,7 +897,7 @@ impl PanelSpace {
         // Every background the panel wants this frame: (position, width, height, radius).
         let mut wanted: Vec<([f32; 2], i32, i32, [f32; 4])> = Vec::new();
         if per_group {
-            let pad = padding_u32 as f64;
+            let pad = end_pad;
             let groups = [
                 (left_group_start, left_group_end, !windows_left.is_empty()),
                 (center_group_start, center_group_end, !windows_center.is_empty()),
