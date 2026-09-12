@@ -2146,7 +2146,11 @@ impl PanelSpace {
         }
     }
 
-    pub(crate) fn blur_rects(&self, rects: &[smithay::utils::Rectangle<i32, Logical>]) {
+    pub(crate) fn blur_rects(
+        &self,
+        rects: &[smithay::utils::Rectangle<i32, Logical>],
+        radius: i32,
+    ) {
         if self.colors.panel_blur(self.config.opacity) {
             if let Some(corner_radius_wlr) = self.corner_radius_wlr.as_ref() {
                 corner_radius_wlr.set_padding(0, 0, 0, 0);
@@ -2159,8 +2163,21 @@ impl PanelSpace {
                     tracing::error!("Failed to create input region for blur");
                     return;
                 };
+                // A wl_region is a union of rectangles, so the rounded corners are built
+                // row by row: the pill is what the user sees, the blur must not poke out of it.
                 for r in rects {
-                    blur_region.add(r.loc.x, r.loc.y, r.size.w, r.size.h);
+                    let rad = radius.min(r.size.w / 2).min(r.size.h / 2).max(0);
+                    blur_region.add(r.loc.x, r.loc.y + rad, r.size.w, r.size.h - 2 * rad);
+                    for i in 0..rad {
+                        let d = rad as f64 - i as f64 - 0.5;
+                        let inset = (rad as f64 - ((rad * rad) as f64 - d * d).sqrt()).round() as i32;
+                        let w = r.size.w - 2 * inset;
+                        if w <= 0 {
+                            continue;
+                        }
+                        blur_region.add(r.loc.x + inset, r.loc.y + i, w, 1);
+                        blur_region.add(r.loc.x + inset, r.loc.y + r.size.h - 1 - i, w, 1);
+                    }
                 }
                 blur_surface.set_blur_region(Some(blur_region.wl_region()));
             }

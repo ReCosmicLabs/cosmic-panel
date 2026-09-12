@@ -1065,7 +1065,7 @@ impl PanelSpace {
                         for r in &pill_rects {
                             input_region.add(r.loc.x, r.loc.y, r.size.w, r.size.h);
                         }
-                        self.blur_rects(&pill_rects);
+                        self.blur_rects(&pill_rects, self.border_radius() as i32);
                     } else {
                         input_region.add(loc.0, loc.1, size.0, size.1);
                         self.blur(smithay::utils::Rectangle::new(loc.into(), size.into()), radius);
