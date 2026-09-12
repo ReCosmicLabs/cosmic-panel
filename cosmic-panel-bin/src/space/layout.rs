@@ -477,7 +477,7 @@ impl PanelSpace {
         // With one pill per group the wings keep `margin` away from the screen edges, so the
         // pills float like the anchor gap already makes them float from the bottom.
         let edge_inset = if self.config.background_per_group() && !is_dock {
-            self.config.margin as f64
+            self.config.side_inset() as f64
         } else {
             0.
         };

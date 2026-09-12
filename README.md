@@ -19,6 +19,10 @@ original work, as required by section 5 of the GPL.
 - **`exclusive_gap`** (new key, `u16` pixels, default `0`). Extra pixels added to the exclusive zone
   beyond the panel thickness, so maximized and tiled windows stop that far from the panel instead of
   touching it. Only used while `exclusive_zone` is on. File touched: `cosmic-panel-bin/src/space/panel_space.rs`.
+- **`side_inset`** (new key, `u16` pixels, default `0`). With `background_per_group`, how far the left and
+  right pills stay from the screen edges along the panel. `0` falls back to `margin`, which with
+  `anchor_gap = true` is also the gap from the anchored edge; setting it lets the side distance differ
+  from the bottom one.
 
 Build: `cargo build --release -p cosmic-panel-bin`; the binary is `target/release/cosmic-panel`.
 The dotfiles install it to `~/.local/bin`, ahead of the distro package.

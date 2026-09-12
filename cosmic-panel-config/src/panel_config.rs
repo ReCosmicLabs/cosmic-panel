@@ -470,6 +470,10 @@ pub struct CosmicPanelConfig {
     /// from it; only used while exclusive_zone is on
     #[serde(default)]
     pub exclusive_gap: u16,
+    /// with background_per_group, how far the wing pills stay from the screen edges along
+    /// the panel; 0 falls back to `margin`, which is also the gap from the anchored edge
+    #[serde(default)]
+    pub side_inset: u16,
 }
 
 impl PartialEq for CosmicPanelConfig {
@@ -499,6 +503,7 @@ impl PartialEq for CosmicPanelConfig {
             && self.keep_style_on_maximize == other.keep_style_on_maximize
             && self.background_per_group == other.background_per_group
             && self.exclusive_gap == other.exclusive_gap
+            && self.side_inset == other.side_inset
     }
 }
 
@@ -532,6 +537,7 @@ impl Default for CosmicPanelConfig {
             keep_style_on_maximize: false,
             background_per_group: false,
             exclusive_gap: 0,
+            side_inset: 0,
         }
     }
 }
@@ -674,6 +680,10 @@ impl CosmicPanelConfig {
     /// one background per applet group instead of one for the whole panel
     pub fn background_per_group(&self) -> bool {
         self.background_per_group && self.expand_to_edges
+    }
+
+    pub fn side_inset(&self) -> u16 {
+        if self.side_inset > 0 { self.side_inset } else { self.margin }
     }
 
     pub fn exclusive_gap(&self) -> i32 {
