@@ -178,6 +178,7 @@ impl Default for CosmicPanelContainerConfig {
                     background_per_group: false,
                     exclusive_gap: 0,
                     side_inset: 0,
+                    wing_inset: 0,
                 },
                 CosmicPanelConfig {
                     name: "Dock".to_string(),
@@ -214,6 +215,7 @@ impl Default for CosmicPanelContainerConfig {
                     background_per_group: false,
                     exclusive_gap: 0,
                     side_inset: 0,
+                    wing_inset: 0,
                 },
             ],
         }

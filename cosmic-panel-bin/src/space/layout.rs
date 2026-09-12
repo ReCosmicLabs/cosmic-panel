@@ -901,12 +901,13 @@ impl PanelSpace {
         let mut wanted: Vec<([f32; 2], i32, i32, [f32; 4])> = Vec::new();
         if per_group {
             let pad = padding_u32 as f64;
+            let inset = self.config.wing_inset as f64;
             let groups = [
-                (left_group_start, left_group_end, !windows_left.is_empty()),
-                (center_group_start, center_group_end, !windows_center.is_empty()),
-                (right_group_start, right_group_end, !windows_right.is_empty()),
+                (left_group_start, left_group_end, !windows_left.is_empty(), inset),
+                (center_group_start, center_group_end, !windows_center.is_empty(), 0.),
+                (right_group_start, right_group_end, !windows_right.is_empty(), inset),
             ];
-            for (group_start, group_end, present) in groups {
+            for (group_start, group_end, present, inset) in groups {
                 if !present {
                     continue;
                 }
@@ -918,10 +919,22 @@ impl PanelSpace {
                     continue;
                 }
                 let length = content.max(0.) + pad * 2.;
+                // The wings may be thinner than the applet row: the pill shrinks around its
+                // own middle, so the icons stay where they are.
                 let (gloc, gw, gh) = if self.config.is_horizontal() {
-                    ([(group_start - pad) as f32, loc[1]], length.round() as i32, h)
+                    let inset = inset.min(h as f64 / 2. - 2.).max(0.);
+                    (
+                        [(group_start - pad) as f32, loc[1] + inset as f32],
+                        length.round() as i32,
+                        h - (inset * 2.).round() as i32,
+                    )
                 } else {
-                    ([loc[0], (group_start - pad) as f32], w, length.round() as i32)
+                    let inset = inset.min(w as f64 / 2. - 2.).max(0.);
+                    (
+                        [loc[0] + inset as f32, (group_start - pad) as f32],
+                        w - (inset * 2.).round() as i32,
+                        length.round() as i32,
+                    )
                 };
                 let r = (self.border_radius() as f32).min(gw as f32 / 2.).min(gh as f32 / 2.);
                 wanted.push((gloc, gw, gh, [r, r, r, r]));

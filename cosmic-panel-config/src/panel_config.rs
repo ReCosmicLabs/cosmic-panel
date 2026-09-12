@@ -474,6 +474,10 @@ pub struct CosmicPanelConfig {
     /// the panel; 0 falls back to `margin`, which is also the gap from the anchored edge
     #[serde(default)]
     pub side_inset: u16,
+    /// with background_per_group, pixels taken off the top and the bottom of the wing pills
+    /// (left and right groups), so they get thinner than the applets' row
+    #[serde(default)]
+    pub wing_inset: u16,
 }
 
 impl PartialEq for CosmicPanelConfig {
@@ -504,6 +508,7 @@ impl PartialEq for CosmicPanelConfig {
             && self.background_per_group == other.background_per_group
             && self.exclusive_gap == other.exclusive_gap
             && self.side_inset == other.side_inset
+            && self.wing_inset == other.wing_inset
     }
 }
 
@@ -538,6 +543,7 @@ impl Default for CosmicPanelConfig {
             background_per_group: false,
             exclusive_gap: 0,
             side_inset: 0,
+            wing_inset: 0,
         }
     }
 }

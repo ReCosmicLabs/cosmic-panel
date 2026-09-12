@@ -23,6 +23,9 @@ original work, as required by section 5 of the GPL.
   right pills stay from the screen edges along the panel. `0` falls back to `margin`, which with
   `anchor_gap = true` is also the gap from the anchored edge; setting it lets the side distance differ
   from the bottom one.
+- **`wing_inset`** (new key, `u16` pixels, default `0`). With `background_per_group`, how many pixels are
+  taken off the top and the bottom of the left and right pills, so the wings read thinner than the
+  center group. The applets do not move: the pill shrinks around its own middle.
 
 Build: `cargo build --release -p cosmic-panel-bin`; the binary is `target/release/cosmic-panel`.
 The dotfiles install it to `~/.local/bin`, ahead of the distro package.
