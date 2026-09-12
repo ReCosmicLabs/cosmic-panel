@@ -16,6 +16,9 @@ original work, as required by section 5 of the GPL.
   `border_radius`. Blur and the input region follow the pills too, so the rest of the layer is
   fully transparent and clicks between groups reach the desktop. Files touched: `cosmic-panel-config/src/panel_config.rs`,
   `cosmic-panel-config/src/container_config.rs`, `cosmic-panel-bin/src/space/{panel_space,layout,render}.rs`.
+- **`exclusive_gap`** (new key, `u16` pixels, default `0`). Extra pixels added to the exclusive zone
+  beyond the panel thickness, so maximized and tiled windows stop that far from the panel instead of
+  touching it. Only used while `exclusive_zone` is on. File touched: `cosmic-panel-bin/src/space/panel_space.rs`.
 
 Build: `cargo build --release -p cosmic-panel-bin`; the binary is `target/release/cosmic-panel`.
 The dotfiles install it to `~/.local/bin`, ahead of the distro package.

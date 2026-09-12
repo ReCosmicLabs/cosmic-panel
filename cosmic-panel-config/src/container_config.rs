@@ -176,6 +176,7 @@ impl Default for CosmicPanelContainerConfig {
                     padding_overlap: 0.5,
                     keep_style_on_maximize: false,
                     background_per_group: false,
+                    exclusive_gap: 0,
                 },
                 CosmicPanelConfig {
                     name: "Dock".to_string(),
@@ -210,6 +211,7 @@ impl Default for CosmicPanelContainerConfig {
                     padding_overlap: 0.5,
                     keep_style_on_maximize: false,
                     background_per_group: false,
+                    exclusive_gap: 0,
                 },
             ],
         }

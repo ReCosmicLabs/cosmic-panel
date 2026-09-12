@@ -952,7 +952,7 @@ impl PanelSpace {
 
                     if progress >= total_t {
                         if self.config.exclusive_zone() {
-                            layer_surface.set_exclusive_zone(panel_size);
+                            layer_surface.set_exclusive_zone(panel_size + self.config.exclusive_gap());
                         }
 
                         self.anchor_gap = target;
@@ -960,7 +960,7 @@ impl PanelSpace {
                     } else {
                         if prev_margin != cur_pix {
                             if self.config.exclusive_zone() {
-                                layer_surface.set_exclusive_zone(panel_size - cur_pix);
+                                layer_surface.set_exclusive_zone(panel_size - cur_pix + self.config.exclusive_gap());
                             }
 
                             self.anchor_gap = cur_pix;
@@ -1016,7 +1016,7 @@ impl PanelSpace {
 
                     if progress >= total_t {
                         if self.config.exclusive_zone() {
-                            layer_surface.set_exclusive_zone(panel_size);
+                            layer_surface.set_exclusive_zone(panel_size + self.config.exclusive_gap());
                         }
 
                         self.anchor_gap = 0;
@@ -1030,7 +1030,7 @@ impl PanelSpace {
                     } else {
                         if prev_margin != cur_pix {
                             if self.config.exclusive_zone() {
-                                layer_surface.set_exclusive_zone(panel_size - cur_pix);
+                                layer_surface.set_exclusive_zone(panel_size - cur_pix + self.config.exclusive_gap());
                             }
 
                             self.anchor_gap = cur_pix;
@@ -1265,7 +1265,7 @@ impl PanelSpace {
                     };
 
                     if !self.config.autohide_enabled() && self.config.exclusive_zone() {
-                        self.layer.as_ref().unwrap().set_exclusive_zone(list_thickness as i32);
+                        self.layer.as_ref().unwrap().set_exclusive_zone(list_thickness as i32 + self.config.exclusive_gap());
                         if self.config.get_effective_anchor_gap() > 0 {
                             Self::set_margin(
                                 self.config.anchor,
@@ -1279,7 +1279,7 @@ impl PanelSpace {
                         && matches!(self.visibility, Visibility::Hidden)
                     {
                         if self.config.exclusive_zone() {
-                            layer_surface.set_exclusive_zone(list_thickness as i32);
+                            layer_surface.set_exclusive_zone(list_thickness as i32 + self.config.exclusive_gap());
                         }
                         Self::set_margin(
                             self.config.anchor,
@@ -1732,7 +1732,7 @@ impl PanelSpace {
                 -1
             };
 
-            l.set_exclusive_zone(list_thickness);
+            l.set_exclusive_zone(if list_thickness < 0 { list_thickness } else { list_thickness + self.config.exclusive_gap() });
             needs_commit = true;
         }
 
@@ -1745,7 +1745,7 @@ impl PanelSpace {
                     PanelAnchor::Left | PanelAnchor::Right => self.dimensions.w,
                     PanelAnchor::Top | PanelAnchor::Bottom => self.dimensions.h,
                 };
-                l.set_exclusive_zone(list_thickness);
+                l.set_exclusive_zone(list_thickness + self.config.exclusive_gap());
                 let (width, height) = if self.config.is_horizontal() {
                     (0, self.dimensions.h)
                 } else {

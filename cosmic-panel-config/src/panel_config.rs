@@ -466,6 +466,10 @@ pub struct CosmicPanelConfig {
     /// single one spanning the whole panel; only meaningful with expand_to_edges
     #[serde(default)]
     pub background_per_group: bool,
+    /// extra pixels reserved beyond the panel thickness, so maximized windows keep a gap
+    /// from it; only used while exclusive_zone is on
+    #[serde(default)]
+    pub exclusive_gap: u16,
 }
 
 impl PartialEq for CosmicPanelConfig {
@@ -494,6 +498,7 @@ impl PartialEq for CosmicPanelConfig {
             && (self.opacity - other.opacity).abs() < 0.01
             && self.keep_style_on_maximize == other.keep_style_on_maximize
             && self.background_per_group == other.background_per_group
+            && self.exclusive_gap == other.exclusive_gap
     }
 }
 
@@ -526,6 +531,7 @@ impl Default for CosmicPanelConfig {
             padding_overlap: 0.5,
             keep_style_on_maximize: false,
             background_per_group: false,
+            exclusive_gap: 0,
         }
     }
 }
@@ -668,6 +674,10 @@ impl CosmicPanelConfig {
     /// one background per applet group instead of one for the whole panel
     pub fn background_per_group(&self) -> bool {
         self.background_per_group && self.expand_to_edges
+    }
+
+    pub fn exclusive_gap(&self) -> i32 {
+        if self.exclusive_zone { self.exclusive_gap as i32 } else { 0 }
     }
 
     pub fn plugins_left(&self) -> Option<Vec<String>> {
