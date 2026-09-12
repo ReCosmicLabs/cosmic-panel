@@ -26,7 +26,7 @@ use sctk::shell::WaylandSurface;
 use smithay::desktop::space::SpaceElement;
 use smithay::desktop::{Space, Window, WindowSurface};
 use smithay::reexports::wayland_server::Resource;
-use smithay::utils::{IsAlive, Physical, Rectangle, Size};
+use smithay::utils::{IsAlive, Logical, Physical, Rectangle, Size};
 use smithay::wayland::compositor::with_states;
 use smithay::wayland::fractional_scale::with_fractional_scale;
 use smithay::wayland::seat::WaylandFocus;
@@ -915,6 +915,14 @@ impl PanelSpace {
         } else {
             wanted.push((loc, w, h, radius));
         }
+        // Per-group mode: input and blur follow the pills, so the rest of the layer is
+        // truly empty -- no frosted strip and no clicks swallowed between the groups.
+        let pill_rects: Vec<Rectangle<i32, Logical>> = wanted
+            .iter()
+            .map(|(l, pw, ph, _)| {
+                Rectangle::new((l[0].round() as i32, l[1].round() as i32).into(), (*pw, *ph).into())
+            })
+            .collect();
 
         let unchanged = self.background_elements.len() == wanted.len()
             && self.background_elements.iter().zip(wanted.iter()).all(|(e, (wl, ww, wh, _))| {
@@ -1053,8 +1061,15 @@ impl PanelSpace {
                     }
                 }
                 if self.animate_state.is_none() {
-                    input_region.add(loc.0, loc.1, size.0, size.1);
-                    self.blur(smithay::utils::Rectangle::new(loc.into(), size.into()), radius);
+                    if per_group {
+                        for r in &pill_rects {
+                            input_region.add(r.loc.x, r.loc.y, r.size.w, r.size.h);
+                        }
+                        self.blur_rects(&pill_rects);
+                    } else {
+                        input_region.add(loc.0, loc.1, size.0, size.1);
+                        self.blur(smithay::utils::Rectangle::new(loc.into(), size.into()), radius);
+                    }
                 }
             };
         }

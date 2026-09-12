@@ -2146,6 +2146,29 @@ impl PanelSpace {
         }
     }
 
+    pub(crate) fn blur_rects(&self, rects: &[smithay::utils::Rectangle<i32, Logical>]) {
+        if self.colors.panel_blur(self.config.opacity) {
+            if let Some(corner_radius_wlr) = self.corner_radius_wlr.as_ref() {
+                corner_radius_wlr.set_padding(0, 0, 0, 0);
+                corner_radius_wlr.set_radius(0, 0, 0, 0);
+            }
+            if let Some((blur_surface, compositor_state)) =
+                self.blur_surface.as_ref().zip(self.compositor_state.as_ref())
+            {
+                let Ok(blur_region) = Region::new(compositor_state) else {
+                    tracing::error!("Failed to create input region for blur");
+                    return;
+                };
+                for r in rects {
+                    blur_region.add(r.loc.x, r.loc.y, r.size.w, r.size.h);
+                }
+                blur_surface.set_blur_region(Some(blur_region.wl_region()));
+            }
+        } else if let Some(blur_surface) = self.blur_surface.as_ref() {
+            blur_surface.set_blur_region(None);
+        }
+    }
+
     pub(crate) fn enable_blur_capacity(
         &mut self,
         blur_manager: Option<&ExtBackgroundEffectManagerV1>,
