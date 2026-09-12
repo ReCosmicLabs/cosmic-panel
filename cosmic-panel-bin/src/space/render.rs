@@ -259,22 +259,22 @@ impl PanelSpace {
                     .flatten()
                     .collect_vec();
 
-                if let Some(bg) = self.background_element.as_ref().map(|e| {
+                for e in self.background_elements.iter() {
                     let pos = e.with_program(|p| p.logical_pos);
-                    e.render_elements(
-                        renderer,
-                        Point::from((
-                            (pos.0 as f64 * self.scale) as i32,
-                            (pos.1 as f64 * self.scale) as i32,
-                        )),
-                        self.scale.into(),
-                        1.0,
-                    )
-                    .into_iter()
-                    .map(PanelRenderElement::Iced)
-                }) {
-                    elements.extend(bg);
-                };
+                    elements.extend(
+                        e.render_elements(
+                            renderer,
+                            Point::from((
+                                (pos.0 as f64 * self.scale) as i32,
+                                (pos.1 as f64 * self.scale) as i32,
+                            )),
+                            self.scale.into(),
+                            1.0,
+                        )
+                        .into_iter()
+                        .map(PanelRenderElement::Iced),
+                    );
+                }
 
                 let _res =
                     my_renderer.render_output(renderer, &mut f, age, &elements, clear_color)?;

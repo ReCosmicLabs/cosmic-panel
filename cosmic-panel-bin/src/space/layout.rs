@@ -588,6 +588,12 @@ impl PanelSpace {
             PanelAnchor::Bottom | PanelAnchor::Right => 0,
         } as i32;
 
+        // Where each group begins along the panel, before any button or spacer moves the
+        // cursor: the per-group backgrounds are drawn from these.
+        let right_group_start = right_pos;
+        let center_group_start = center_pos;
+        let left_group_start = left_pos;
+
         if let Some(right_button) = right_overflow_button {
             let size = right_button.geometry().size.to_f64();
             let crosswise_pos = if self.config.is_horizontal() {
@@ -752,12 +758,15 @@ impl PanelSpace {
         let left_pos = map_windows(windows_left.iter_mut(), left_pos);
 
         // will be already offset if dock
-        map_windows(windows_center.iter_mut(), center_pos);
+        let center_group_end = map_windows(windows_center.iter_mut(), center_pos);
 
-        map_windows(windows_right.iter_mut(), right_pos);
+        let right_group_end = map_windows(windows_right.iter_mut(), right_pos);
+        let mut left_group_end = left_pos;
         // if there is a left overflow_button, map it
         if let Some(left_button) = left_overflow_button {
             let size = left_button.geometry().size.to_f64();
+            left_group_end += if self.config.is_horizontal() { size.w } else { size.h }
+                + spacing_u32 as f64;
             let crosswise_pos = if self.config.is_horizontal() {
                 margin_offset
                     + center_in_bar(new_logical_crosswise_dim.try_into().unwrap(), size.h as u32)
@@ -828,94 +837,134 @@ impl PanelSpace {
             (PanelAnchor::Top, 0) => [0., 0., border_radius, border_radius],
             _ => [border_radius, border_radius, border_radius, border_radius],
         };
-        if !self.background_element.as_ref().is_some_and(|e| {
-            e.with_program(|p| {
-                p.logical_height == h
-                    && p.logical_width == w
-                    && self.bg_color() == p.color
-                    && p.scale == self.scale
-            })
-        }) || self.animate_state.as_ref().is_some()
+        let per_group = self.config.background_per_group() && !is_dock;
+        // With one pill per group the layer itself stays square: the pills draw their own
+        // corners, and a rounded full-width layer is what the corner-radius protocol rejects.
+        let layer_radius = if per_group { [0.; 4] } else { radius };
+
+        let start_overlap = if self.logical_layer_start_overlap > 0 && is_overlapping_start {
+            self.logical_layer_start_overlap + self.config.spacing as i32
+        } else {
+            0
+        };
+
+        let end_overlap = if self.logical_layer_end_overlap > 0 && is_overlapping_end {
+            self.logical_layer_end_overlap + self.config.spacing as i32
+        } else {
+            0
+        };
+
+        let mut loc = match self.config.anchor {
+            PanelAnchor::Left => [
+                self.config.margin as f32 + self.anchor_gap as f32,
+                container_lengthwise_pos as f32,
+            ],
+            PanelAnchor::Right => [-self.anchor_gap as f32, container_lengthwise_pos as f32],
+            PanelAnchor::Bottom => [container_lengthwise_pos as f32, -self.anchor_gap as f32],
+            PanelAnchor::Top => [
+                container_lengthwise_pos as f32,
+                self.config.margin as f32 + self.anchor_gap as f32,
+            ],
+        };
+
+        if is_overlapping_start {
+            if self.config.is_horizontal() {
+                loc[0] += start_overlap as f32 - container_lengthwise_pos as f32;
+                w -= start_overlap - container_lengthwise_pos;
+            } else {
+                loc[1] += start_overlap as f32 - container_lengthwise_pos as f32;
+                h -= start_overlap - container_lengthwise_pos;
+            }
+        }
+        if is_overlapping_end {
+            if self.config.is_horizontal() {
+                w -= end_overlap - container_lengthwise_pos;
+            } else {
+                h -= end_overlap - container_lengthwise_pos;
+            }
+        }
+        if self.config.is_horizontal() {
+            h -= self.config.margin as i32;
+        } else {
+            w -= self.config.margin as i32;
+        }
+
+        // Every background the panel wants this frame: (position, width, height, radius).
+        let mut wanted: Vec<([f32; 2], i32, i32, [f32; 4])> = Vec::new();
+        if per_group {
+            let pad = padding_u32 as f64;
+            let groups = [
+                (left_group_start, left_group_end, !windows_left.is_empty()),
+                (center_group_start, center_group_end, !windows_center.is_empty()),
+                (right_group_start, right_group_end, !windows_right.is_empty()),
+            ];
+            for (group_start, group_end, present) in groups {
+                if !present {
+                    continue;
+                }
+                // map_windows leaves the cursor one spacing past the last applet.
+                let length = (group_end - spacing_u32 as f64 - group_start).max(0.) + pad * 2.;
+                let (gloc, gw, gh) = if self.config.is_horizontal() {
+                    ([(group_start - pad) as f32, loc[1]], length.round() as i32, h)
+                } else {
+                    ([loc[0], (group_start - pad) as f32], w, length.round() as i32)
+                };
+                let r = (self.border_radius() as f32).min(gw as f32 / 2.).min(gh as f32 / 2.);
+                wanted.push((gloc, gw, gh, [r, r, r, r]));
+            }
+        } else {
+            wanted.push((loc, w, h, radius));
+        }
+
+        let unchanged = self.background_elements.len() == wanted.len()
+            && self.background_elements.iter().zip(wanted.iter()).all(|(e, (wl, ww, wh, _))| {
+                e.with_program(|p| {
+                    p.logical_height == *wh
+                        && p.logical_width == *ww
+                        && p.logical_pos == (wl[0].round() as i32, wl[1].round() as i32)
+                        && self.bg_color() == p.color
+                        && p.scale == self.scale
+                })
+            });
+        if !unchanged
+            || self.animate_state.as_ref().is_some()
             || self.transitioning
             || self.is_background_dirty
         {
             self.transitioning = false;
-            if let Some(bg) = self.background_element.take() {
+            for bg in self.background_elements.drain(..) {
                 self.space.unmap_elem(&CosmicMappedInternal::Background(bg));
             }
-
-            let start_overlap = if self.logical_layer_start_overlap > 0 && is_overlapping_start {
-                self.logical_layer_start_overlap + self.config.spacing as i32
-            } else {
-                0
-            };
-
-            let end_overlap = if self.logical_layer_end_overlap > 0 && is_overlapping_end {
-                self.logical_layer_end_overlap + self.config.spacing as i32
-            } else {
-                0
-            };
 
             let Some(output) = self.output.as_ref().map(|o| o.1.clone()) else {
                 self.is_dirty = true;
                 self.needs_layout = true;
                 bail!("output missing");
             };
-            let mut loc = match self.config.anchor {
-                PanelAnchor::Left => [
-                    self.config.margin as f32 + self.anchor_gap as f32,
-                    container_lengthwise_pos as f32,
-                ],
-                PanelAnchor::Right => [-self.anchor_gap as f32, container_lengthwise_pos as f32],
-                PanelAnchor::Bottom => [container_lengthwise_pos as f32, -self.anchor_gap as f32],
-                PanelAnchor::Top => [
-                    container_lengthwise_pos as f32,
-                    self.config.margin as f32 + self.anchor_gap as f32,
-                ],
-            };
-
-            if is_overlapping_start {
-                if self.config.is_horizontal() {
-                    loc[0] += start_overlap as f32 - container_lengthwise_pos as f32;
-                    w -= start_overlap - container_lengthwise_pos;
-                } else {
-                    loc[1] += start_overlap as f32 - container_lengthwise_pos as f32;
-                    h -= start_overlap - container_lengthwise_pos;
-                }
+            for (i, (bloc, bw, bh, bradius)) in wanted.into_iter().enumerate() {
+                let bg = background_element(
+                    Id::new(format!("panel_bg_{i}")),
+                    bw,
+                    bh,
+                    bradius,
+                    self.shared.loop_handle.clone(),
+                    self.colors.theme.clone(),
+                    self.space.id(),
+                    bloc,
+                    self.bg_color(),
+                    self.scale,
+                );
+                bg.output_enter(&output, Rectangle::default());
+                self.background_elements.push(bg.clone());
+                self.space.map_element(
+                    CosmicMappedInternal::Background(bg),
+                    (bloc[0] as i32, bloc[1] as i32),
+                    false,
+                );
             }
-            if is_overlapping_end {
-                if self.config.is_horizontal() {
-                    w -= end_overlap - container_lengthwise_pos;
-                } else {
-                    h -= end_overlap - container_lengthwise_pos;
-                }
-            }
-            if self.config.is_horizontal() {
-                h -= self.config.margin as i32;
-            } else {
-                w -= self.config.margin as i32;
-            }
-            let bg = background_element(
-                Id::new("panel_bg"),
-                w,
-                h,
-                radius,
-                self.shared.loop_handle.clone(),
-                self.colors.theme.clone(),
-                self.space.id(),
-                loc,
-                self.bg_color(),
-                self.scale,
-            );
-            bg.output_enter(&output, Rectangle::default());
-            self.background_element = Some(bg.clone());
-            self.space.map_element(
-                CosmicMappedInternal::Background(bg),
-                (loc[0] as i32, loc[1] as i32),
-                false,
-            );
             self.is_background_dirty = false;
         }
+        let radius = layer_radius;
         if self.animate_state.is_none() {
             input_region.subtract(0, 0, i32::MAX, i32::MAX);
         }

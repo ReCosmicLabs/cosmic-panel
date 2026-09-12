@@ -462,6 +462,10 @@ pub struct CosmicPanelConfig {
     /// keep panel styling when windows are maximized
     #[serde(default)]
     pub keep_style_on_maximize: bool,
+    /// draw one background behind each group of applets (wings and center) instead of a
+    /// single one spanning the whole panel; only meaningful with expand_to_edges
+    #[serde(default)]
+    pub background_per_group: bool,
 }
 
 impl PartialEq for CosmicPanelConfig {
@@ -489,6 +493,7 @@ impl PartialEq for CosmicPanelConfig {
             && self.size_wings == other.size_wings
             && (self.opacity - other.opacity).abs() < 0.01
             && self.keep_style_on_maximize == other.keep_style_on_maximize
+            && self.background_per_group == other.background_per_group
     }
 }
 
@@ -520,6 +525,7 @@ impl Default for CosmicPanelConfig {
             autohover_delay_ms: Some(500),
             padding_overlap: 0.5,
             keep_style_on_maximize: false,
+            background_per_group: false,
         }
     }
 }
@@ -657,6 +663,11 @@ impl CosmicPanelConfig {
     /// get whether the panel should expand to cover the edges of the output
     pub fn expand_to_edges(&self) -> bool {
         self.expand_to_edges
+    }
+
+    /// one background per applet group instead of one for the whole panel
+    pub fn background_per_group(&self) -> bool {
+        self.background_per_group && self.expand_to_edges
     }
 
     pub fn plugins_left(&self) -> Option<Vec<String>> {
